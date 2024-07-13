@@ -21,7 +21,7 @@ class PIDController:
         plt.title('Resposta ao Degrau do Sistema em Malha Fechada com Controlador PID')
         plt.grid(True)
         plt.show()
-
+    
 # # Exemplo de uso
 # if __name__ == "__main__":
 #     numerador = [1]

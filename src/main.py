@@ -6,8 +6,13 @@ def main():
     Kp, Ki, Kd = melhor_individuo
     print(f"Melhor individuo: Kp={Kp}, Ki={Ki}, Kd={Kd}")
 
-    tempo, resposta = simular_pid(Kp, Ki, Kd)
-    plotar_resposta(tempo, resposta)
+    numerador = [1]
+    denominador = [1, 1]
+    sistema = ctrl.TransferFunction(numerador, denominador)
+
+    pid_controller = PIDController(Kp, Ki, Kd, sistema)
+
+    pid_controller.plot()
 
 if __name__ == "__main__":
     main()

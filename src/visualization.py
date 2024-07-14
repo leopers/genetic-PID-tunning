@@ -1,10 +1,3 @@
 import matplotlib.pyplot as plt
+from pid_controller import PIDController
 
-def plotar_resposta(tempo, resposta):
-    plt.figure()
-    plt.plot(tempo, resposta)
-    plt.xlabel('Tempo (s)')
-    plt.ylabel('Amplitude')
-    plt.title('Resposta ao Degrau do Sistema em Malha Fechada com Controlador PID')
-    plt.grid(True)
-    plt.show()

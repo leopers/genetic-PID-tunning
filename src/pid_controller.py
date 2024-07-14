@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import control as ctrl
+import io
 
 class PIDController:
     def __init__(self, kp, ki, kd, sistema):
@@ -14,27 +15,25 @@ class PIDController:
 
     def plot(self):
         t, y = ctrl.step_response(self.malha_fechada)
-        plt.figure()
-        plt.plot(t, y)
-        plt.xlabel('Tempo (s)')
-        plt.ylabel('Amplitude')
-        plt.title('Resposta ao Degrau do Sistema em Malha Fechada com Controlador PID')
-        plt.grid(True)
-        plt.show()
-    
-# # Exemplo de uso
-# if __name__ == "__main__":
-#     numerador = [1]
-#     denominador = [1, 1]
-#     sistema = ctrl.TransferFunction(numerador, denominador)
+        fig, ax = plt.subplots()
+        ax.plot(t, y)
+        ax.set_xlabel('Tempo (s)')
+        ax.set_ylabel('Amplitude')
+        ax.set_title('Resposta ao Degrau do Sistema em Malha Fechada com Controlador PID')
+        ax.grid(True)
+        
+        # Salvar o plot em um buffer de memória
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        
+        # Fechar a figura para liberar memória
+        plt.close(fig)
+        
+        return buf
 
-#     # Parâmetros do controlador PID
-#     kp = 1
-#     ki = 1
-#     kd = 1
-
-#     # Criar o controlador PID
-#     pid_controller = PIDController(kp, ki, kd, sistema)
-
-#     # Plotar a resposta ao degrau
-#     pid_controller.plot()
+    def avalia(self):
+        t, y = ctrl.step_response(self.malha_fechada)
+        referencia = np.ones_like(t)
+        mse = np.mean((y - referencia) ** 2)
+        return mse

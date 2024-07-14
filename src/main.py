@@ -1,13 +1,11 @@
 import control as ctrl
 from genetic_algorithm import GeneticAlgorithm
 from pid_controller import PIDController
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from PIL import Image
+from visualization import Visualization
 
 def main():
-    numerador = [1]
-    denominador = [1, 1, 1]
+    numerador = [1, 1, 1]
+    denominador = [1, 1, 1, 1, 1]
     sistema = ctrl.TransferFunction(numerador, denominador)
     
     ga = GeneticAlgorithm(sistema)
@@ -19,22 +17,8 @@ def main():
     pid_controller = PIDController(Kp, Ki, Kd, sistema)
 
     # Criar a animação
-    fig, ax = plt.subplots()
-    img = None
-
-    def update(i):
-        nonlocal img
-        buf = imagens[i]
-        buf.seek(0)
-        image = Image.open(buf)
-        if img is None:
-            img = ax.imshow(image)
-        else:
-            img.set_data(image)
-        return [img]
-
-    ani = FuncAnimation(fig, update, frames=len(imagens), blit=True)
-    ani.save('evolucao_pid.gif', writer='imagemagick')
+    viz = Visualization(imagens)
+    viz.create_animation('evolucao_pid.gif')
 
     # Plotar a resposta final
     plot_image = pid_controller.plot()

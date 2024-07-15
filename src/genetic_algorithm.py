@@ -46,7 +46,9 @@ def simulate_system(system, pid, time):
     :return:
     """
     pid_tf = pid.create_transfer_function()
-    open_loop_tf = system.system * pid_tf  # Open-loop transfer function G(s)C(s)
+    num = np.polymul(pid_tf.num, system.system.num)
+    den = np.polymul(pid_tf.den, system.system.den)
+    open_loop_tf = TransferFunction(num, den)  # Open-loop transfer function G(s)C(s)
     closed_loop_num = np.polymul(open_loop_tf.num, [1])
     closed_loop_den = np.polyadd(open_loop_tf.den, open_loop_tf.num)  # 1 + G(s)C(s)
     closed_loop_tf = TransferFunction(closed_loop_num, closed_loop_den)
@@ -87,7 +89,7 @@ def crossover(parents, offspring_size):
     return offspring
 
 
-def mutate(offspring, Kp_range, Ki_range, Kd_range, mutation_rate=0.1):
+def mutate(offspring, Kp_range, Ki_range, Kd_range, mutation_rate=100):
     """
     Mutate the offspring with a certain probability
     :param offspring:

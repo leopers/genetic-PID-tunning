@@ -15,14 +15,14 @@ def main():
     setpoint = np.ones_like(time)  # Define the setpoint as a constant value of 1 over time
 
     # Choose the cost function (mse or lqr)
-    cost_function = mse  # or lqr
+    cost_function = lqr  # or lqr
 
     # Genetic Algorithm parameters
     pop_size = 20
     num_generations = 50
-    Kp_range = (0, 10)
-    Ki_range = (0, 10)
-    Kd_range = (0, 10)
+    Kp_range = (0, 100)
+    Ki_range = (0, 100)
+    Kd_range = (0, 100)
 
     # Run Genetic Algorithm
     best_pid_params, best_individuals = genetic_algorithm(

@@ -1,29 +1,41 @@
-import control as ctrl
-from genetic_algorithm import GeneticAlgorithm
-from pid_controller import PIDController
-from visualization import Visualization
+import numpy as np
+from src.system_simulation import SystemDynamics
+from src.genetic_algorithm import genetic_algorithm
+from src.visualization import animate_genetic_algorithm
+from src.cost_functions import mse, lqr  # Import the cost functions
+
 
 def main():
-    numerador = [1, 1, 1]
-    denominador = [1, 1, 1, 1, 1]
-    sistema = ctrl.TransferFunction(numerador, denominador)
-    
-    ga = GeneticAlgorithm(sistema)
-    melhor_individuo, imagens = ga.run()
-    Kp, Ki, Kd = melhor_individuo
-    print(f"Melhor individuo: Kp={Kp}, Ki={Ki}, Kd={Kd}")
+    # Define the system's transfer function
+    num = [1]  # Numerator coefficients
+    den = [1, 1, 1]  # Denominator coefficients (s^2 + s + 1)
 
-    # Criar o controlador PID com os melhores parâmetros
-    pid_controller = PIDController(Kp, Ki, Kd, sistema)
+    system = SystemDynamics(num, den)
+    time = np.linspace(0, 10, 1000)  # Define the time vector for simulation
+    setpoint = np.ones_like(time)  # Define the setpoint as a constant value of 1 over time
 
-    # Criar a animação
-    viz = Visualization(imagens)
-    viz.create_animation('evolucao_pid.gif')
+    # Choose the cost function (mse or lqr)
+    cost_function = mse  # or lqr
 
-    # Plotar a resposta final
-    plot_image = pid_controller.plot()
-    with open("pid_response.png", "wb") as f:
-        f.write(plot_image.getbuffer())
+    # Genetic Algorithm parameters
+    pop_size = 20
+    num_generations = 50
+    Kp_range = (0, 10)
+    Ki_range = (0, 10)
+    Kd_range = (0, 10)
+
+    # Run Genetic Algorithm
+    best_pid_params, best_individuals = genetic_algorithm(
+        system, setpoint, pop_size, num_generations,
+        Kp_range, Ki_range, Kd_range,
+        cost_function=cost_function
+    )
+
+    print(f"Best PID Parameters: Kp = {best_pid_params[0]}, Ki = {best_pid_params[1]}, Kd = {best_pid_params[2]}")
+
+    # Animate the Genetic Algorithm process
+    animate_genetic_algorithm(best_individuals, num_generations)
+
 
 if __name__ == "__main__":
     main()

@@ -13,3 +13,6 @@ class PIDController:
         self.kd = kd
 
         self.system = TransferFunction([kd, kp, ki], [1, 0])
+
+    def create_transfer_function(self):
+        return self.system

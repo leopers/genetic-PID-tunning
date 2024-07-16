@@ -9,7 +9,7 @@ from pso_algorithm import pso
 def main():
     # Define the system's transfer function
     num = [1]  # Numerator coefficients
-    den = [1, 1, 1]  # Denominator coefficients (s^2 + s + 1)
+    den = [1, 1.4, 1, 1]  # Denominator coefficients (s^2 + s + 1)
 
     system = SystemDynamics(num, den)
     time = np.linspace(0, 10, 1000)  # Define the time vector for simulation

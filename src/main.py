@@ -3,6 +3,7 @@ from system_simulation import SystemDynamics
 from genetic_algorithm import genetic_algorithm
 from visualization import animate_genetic_algorithm
 from cost_functions import mse, lqr  # Import the cost functions
+from pso_algorithm import pso
 
 
 def main():
@@ -23,6 +24,7 @@ def main():
     Kp_range = (0, 100)
     Ki_range = (0, 100)
     Kd_range = (0, 100)
+    dt = 0.01
 
     # Run Genetic Algorithm
     best_pid_params, best_individuals = genetic_algorithm(
@@ -31,11 +33,15 @@ def main():
         cost_function=cost_function
     )
 
+    # Run pso algorithm
+    best_pid_params_pso, best_individuals_pso = pso(system, setpoint, pop_size, num_generations, Kp_range, Ki_range, Kd_range, cost_function, dt)
+
     print(f"Best PID Parameters: Kp = {best_pid_params[0]}, Ki = {best_pid_params[1]}, Kd = {best_pid_params[2]}")
+    print(f"Best PID PSO Parameters: Kp = {best_pid_params_pso[0]}, Ki = {best_pid_params_pso[1]}, Kd = {best_pid_params_pso[2]}")
 
     # Animate the Genetic Algorithm process
     animate_genetic_algorithm(best_individuals, num_generations, system)
-
+    animate_genetic_algorithm(best_individuals_pso, num_generations, system)
 
 if __name__ == "__main__":
     main()

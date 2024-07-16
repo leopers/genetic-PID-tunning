@@ -12,8 +12,18 @@ import copy
 
 def main():
     # Define the system's transfer function
-    num = [0.001]  # Numerator coefficients
-    den = [1, 0.001*50]  # Denominator coefficients 
+
+    # First-order system
+    # num = [2]  
+    # den = [5, 1] 
+
+    # Second-order system
+    # num = [16]
+    # den = [1, 4, 16]
+
+    # DC motor system
+    num = [1]
+    den = [0.01, 1, 0]
 
     system = SystemDynamics(num, den)
     time = np.linspace(0, 10, 1000)  # Define the time vector for simulation
@@ -25,9 +35,9 @@ def main():
     # Genetic Algorithm parameters
     pop_size = 20
     num_generations = 50
-    Kp_range = (0, 100)
-    Ki_range = (0, 100)
-    Kd_range = (0, 100)
+    Kp_range = (0, 1000)
+    Ki_range = (0, 1000)
+    Kd_range = (0, 1000)
     dt = 0.01
 
     # Run Genetic Algorithm

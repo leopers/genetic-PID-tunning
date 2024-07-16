@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.signal import TransferFunction, lsim
+from pid_controller import PIDController
 
 
 class SystemDynamics:
@@ -18,3 +19,8 @@ class SystemDynamics:
     def step_response(self, t=np.linspace(0, 10, 1000)):
         t, y = self.simulate(np.ones_like(t), t)
         return t, y
+    
+    def update_transfer_function(self, Kp, Ki, Kd):
+        pid = PIDController(Kp, Ki, Kd)
+        self.system = pid.close_loop(self.system)
+        

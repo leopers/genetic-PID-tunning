@@ -64,6 +64,7 @@ def pso(system, setpoint, pop_size, num_generations, Kp_range, Ki_range, Kd_rang
     particles = [Particle(Kp_range, Ki_range, Kd_range) for _ in range(pop_size)]
     global_best_position = None
     global_best_score = float('-inf')
+    best_individuals = []
 
     for generation in range(num_generations):
         for particle in particles:
@@ -85,6 +86,7 @@ def pso(system, setpoint, pop_size, num_generations, Kp_range, Ki_range, Kd_rang
             particle.velocity = w * particle.velocity + cognitive_velocity + social_velocity
             particle.position += particle.velocity
 
+        best_individuals.append(global_best_position)
         print(f"Generation {generation}: Best Fitness = {global_best_score}")
 
-    return global_best_position, particles
+    return global_best_position, best_individuals

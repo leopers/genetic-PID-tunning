@@ -118,10 +118,11 @@ def create_next_generation(population, offspring):
     return population[:len(population) - len(offspring)] + offspring
 
 
-def genetic_algorithm(system, setpoint, pop_size, num_generations, Kp_range, Ki_range, Kd_range, cost_function,
+def genetic_algorithm(system, time, setpoint, pop_size, num_generations, Kp_range, Ki_range, Kd_range, cost_function,
                       dt=0.01):
     """
     Genetic algorithm to tune the PID controller
+    :param time:
     :param system:
     :param setpoint:
     :param pop_size:
@@ -133,7 +134,7 @@ def genetic_algorithm(system, setpoint, pop_size, num_generations, Kp_range, Ki_
     :param dt:
     :return:
     """
-    time = np.linspace(0, 10, int(10 / dt))
+    time = time
     population = initialize_population(pop_size, Kp_range, Ki_range, Kd_range)
     best_individuals = []
 

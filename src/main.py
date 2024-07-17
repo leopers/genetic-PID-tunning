@@ -4,7 +4,7 @@ from genetic_algorithm import genetic_algorithm
 from visualization import animate_genetic_algorithm
 from cost_functions import mse, lqr  # Import the cost functions
 from pso_algorithm import pso
-from nichols import nichols_black_tuning
+from nichols import ziegler_nichols_tuning
 from pid_controller import PIDController
 import matplotlib.pyplot as plt
 import copy
@@ -26,11 +26,11 @@ def main():
     den = [0.01, 1, 0]
 
     system = SystemDynamics(num, den)
-    time = np.linspace(0, 10, 1000)  # Define the time vector for simulation
+    time = system.time  # Define the time vector for simulation
     setpoint = np.ones_like(time)  # Define the setpoint as a constant value of 1 over time
 
     # Choose the cost function (mse or lqr)
-    cost_function = lqr  # or mse
+    cost_function = lqr
 
     # Genetic Algorithm parameters
     pop_size = 20
@@ -42,20 +42,22 @@ def main():
 
     # Run Genetic Algorithm
     best_pid_params, best_individuals = genetic_algorithm(
-        system, setpoint, pop_size, num_generations,
+        system, time, setpoint, pop_size, num_generations,
         Kp_range, Ki_range, Kd_range,
         cost_function=cost_function
     )
 
     # Run pso algorithm
-    best_pid_params_pso, best_individuals_pso = pso(system, setpoint, pop_size, num_generations, Kp_range, Ki_range, Kd_range, cost_function, dt)
+    best_pid_params_pso, best_individuals_pso = pso(system, time, setpoint, pop_size, num_generations, Kp_range, Ki_range,
+                                                    Kd_range, cost_function, dt)
 
-    # Run Zigler-Nichols method
-    pid_params_zn = nichols_black_tuning(system)
+    # Run Ziegler-Nichols method
+    pid_params_zn = ziegler_nichols_tuning(system)
 
     print(f"Best PID Parameters: Kp = {best_pid_params[0]}, Ki = {best_pid_params[1]}, Kd = {best_pid_params[2]}")
-    print(f"Best PID PSO Parameters: Kp = {best_pid_params_pso[0]}, Ki = {best_pid_params_pso[1]}, Kd = {best_pid_params_pso[2]}")
-    print(f"Zigler-Nichols PID Parameters: Kp = {pid_params_zn[0]}, Ki = {pid_params_zn[1]}, Kd = {pid_params_zn[2]}")
+    print(
+        f"Best PID PSO Parameters: Kp = {best_pid_params_pso[0]}, Ki = {best_pid_params_pso[1]}, Kd = {best_pid_params_pso[2]}")
+    print(f"Ziegler-Nichols PID Parameters: Kp = {pid_params_zn[0]}, Ki = {pid_params_zn[1]}, Kd = {pid_params_zn[2]}")
 
     # Step-response for all 3 methods best PID parameters
 
@@ -92,6 +94,7 @@ def main():
     # Animate the Genetic Algorithm process
     animate_genetic_algorithm(best_individuals, num_generations, system)
     animate_genetic_algorithm(best_individuals_pso, num_generations, system)
+
 
 if __name__ == "__main__":
     main()

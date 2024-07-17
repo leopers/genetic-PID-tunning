@@ -10,7 +10,7 @@ class SystemDynamics:
 
     def __init__(self, num, den):
         self.system = TransferFunction(num, den)
-        self.time = np.linspace(0, 10, 1000)
+        self.time = np.linspace(0, 100, 1000)
 
     def simulate(self, u, t):
         t_out, y_out, _ = lsim(self.system, u, t)

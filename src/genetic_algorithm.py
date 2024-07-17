@@ -1,7 +1,7 @@
 import random
 import numpy as np
 from scipy.signal import lsim, TransferFunction
-from src.pid_controller import PIDController
+from pid_controller import PIDController
 
 
 def initialize_population(pop_size, Kp_range, Ki_range, Kd_range):

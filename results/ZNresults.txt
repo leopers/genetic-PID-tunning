@@ -1,0 +1,7 @@
+### Best of PID Parameters ###
+---> KP: 134.4 - KI: 505.73297820704397 - KD: 8.929297068998421 <---
+@@ Result:
+* Rise Time         : 0.11211844164064397
+* Overshoot         : 61.80528275379942
+* SettlingTime      : 1.8997847055775785
+* SteadyState       : 1.0

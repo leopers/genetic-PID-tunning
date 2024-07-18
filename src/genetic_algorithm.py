@@ -1,4 +1,5 @@
 from typing import Any
+import os
 from utils import generate_gen
 from calc_fitness import evaluate_fitness, evaluate_mutation_fitness
 from system_simulation import SystemDynamics
@@ -45,6 +46,12 @@ class GeneticAlgorithm:
         self.rb = rb
         self.population_size = population_size
         self.target = minimum_target
+
+        # Lists to store the generation and the parameters
+        self.kp_list = []
+        self.ki_list = []
+        self.kd_list = []
+        self.fitness_list = []
 
     def create_population(self):
         """
@@ -245,6 +252,63 @@ class GeneticAlgorithm:
             best, looping = self.termination(population)
             self.display_out(best, generation)
 
+            # Store the generation and the parameters
+            self.kp_list.append(best["gen"][0])
+            self.ki_list.append(best["gen"][1])
+            self.kd_list.append(best["gen"][2])
+            self.fitness_list.append(best["fitness"])
+
             generation += 1
 
         return self.get_PID(self.num, self.den, best)
+
+    def plot_evolution(self):
+        """
+        Plot the evolution of the PID coefficients and fitness over generations
+        and save each plot as a separate file in the results directory.
+        """
+        results_dir = '../results'
+        if not os.path.exists(results_dir):
+            os.makedirs(results_dir)
+
+        generations = range(len(self.kp_list))
+
+        # Plot Kp evolution
+        plt.figure()
+        plt.plot(generations, self.kp_list, label='Kp', color='r')
+        plt.xlabel('Generation')
+        plt.ylabel('Kp')
+        plt.title('Evolution of Kp')
+        plt.grid(True)
+        plt.savefig(os.path.join(results_dir, 'Kp_evolution.png'))
+        plt.close()
+
+        # Plot Ki evolution
+        plt.figure()
+        plt.plot(generations, self.ki_list, label='Ki', color='g')
+        plt.xlabel('Generation')
+        plt.ylabel('Ki')
+        plt.title('Evolution of Ki')
+        plt.grid(True)
+        plt.savefig(os.path.join(results_dir, 'Ki_evolution.png'))
+        plt.close()
+
+        # Plot Kd evolution
+        plt.figure()
+        plt.plot(generations, self.kd_list, label='Kd', color='b')
+        plt.xlabel('Generation')
+        plt.ylabel('Kd')
+        plt.title('Evolution of Kd')
+        plt.grid(True)
+        plt.savefig(os.path.join(results_dir, 'Kd_evolution.png'))
+        plt.close()
+
+        # Plot fitness evolution
+        plt.figure()
+        plt.plot(generations, self.fitness_list, label='Fitness', color='m')
+        plt.xlabel('Generation')
+        plt.ylabel('Fitness')
+        plt.title('Evolution of Fitness')
+        plt.grid(True)
+        plt.savefig(os.path.join(results_dir, 'Fitness_evolution.png'))
+        plt.close()

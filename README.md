@@ -2,7 +2,7 @@
 
 ## About
 
-This project aims to compare the performance of three distinct methods for tuning PID controllers: the Genetic Algorithm (GA), Particle Swarm Optimization (PSO), and the Ziegler-Nichols method.
+This project aims to compare the performance of two distinct methods for tuning PID controllers: the Genetic Algorithm (GA) and Particle Swarm Optimization (PSO).
 
 PID controllers are widely used in industrial applications due to their simplicity and effectiveness in controlling dynamic systems. Traditional methods like Ziegler-Nichols provide quick initial tuning based on empirical rules, but often require further adjustments. On the other hand, computational optimization techniques such as GA and PSO explore the search space more comprehensively, potentially yielding better performance in complex and nonlinear systems.
 
@@ -12,7 +12,7 @@ This study involves implementing each tuning method, running simulations, and ev
 
 - python
 - numpy
-- scipy
+- tqdm
 - matplotlib
 - control
 

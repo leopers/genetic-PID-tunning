@@ -1,100 +1,49 @@
-import numpy as np
 from system_simulation import SystemDynamics
-from genetic_algorithm import genetic_algorithm
-from visualization import animate_genetic_algorithm
-from cost_functions import mse, lqr  # Import the cost functions
-from pso_algorithm import pso
-from nichols import ziegler_nichols_tuning
+from genetic_algorithm import GeneticAlgorithm
 from pid_controller import PIDController
+from plotting import plot_PID
+from ziegler_nichols import ziegler_nichols_tuning
 import matplotlib.pyplot as plt
-import copy
 
-
-def main():
-    # Define the system's transfer function
-
-    # First-order system
-    # num = [2]  
-    # den = [5, 1] 
-
-    # Second-order system
-    # num = [16]
-    # den = [1, 4, 16]
-
-    # DC motor system
-    num = [1]
-    den = [0.01, 1, 0]
-
+def compare_tuning():
+    # Define the system transfer function
+    num = [20]
+    den = [1, 32, 140, 0]
     system = SystemDynamics(num, den)
-    time = system.time  # Define the time vector for simulation
-    setpoint = np.ones_like(time)  # Define the setpoint as a constant value of 1 over time
+    
+    # Genetic Algorithm Tuning
+    n_var = 3                       # Kp, Ki, Kd
+    n_bit = 10
+    ra = 100                        # Upper bound
+    rb = 0                          # Lower bound
+    population = 100
+    minimum_target = 82
 
-    # Choose the cost function (mse or lqr)
-    cost_function = lqr
+    ga_tuner = GeneticAlgorithm(system, n_var, n_bit, ra, rb, population, minimum_target)
+    kp_ga, ki_ga, kd_ga = ga_tuner()
+    pid_ga = PIDController(kp_ga, ki_ga, kd_ga)
 
-    # Genetic Algorithm parameters
-    pop_size = 20
-    num_generations = 50
-    Kp_range = (0, 1000)
-    Ki_range = (0, 1000)
-    Kd_range = (0, 1000)
-    dt = 0.01
-
-    # Run Genetic Algorithm
-    best_pid_params, best_individuals = genetic_algorithm(
-        system, time, setpoint, pop_size, num_generations,
-        Kp_range, Ki_range, Kd_range,
-        cost_function=cost_function
-    )
-
-    # Run pso algorithm
-    best_pid_params_pso, best_individuals_pso = pso(system, time, setpoint, pop_size, num_generations, Kp_range, Ki_range,
-                                                    Kd_range, cost_function, dt)
-
-    # Run Ziegler-Nichols method
-    pid_params_zn = ziegler_nichols_tuning(system)
-
-    print(f"Best PID Parameters: Kp = {best_pid_params[0]}, Ki = {best_pid_params[1]}, Kd = {best_pid_params[2]}")
-    print(
-        f"Best PID PSO Parameters: Kp = {best_pid_params_pso[0]}, Ki = {best_pid_params_pso[1]}, Kd = {best_pid_params_pso[2]}")
-    print(f"Ziegler-Nichols PID Parameters: Kp = {pid_params_zn[0]}, Ki = {pid_params_zn[1]}, Kd = {pid_params_zn[2]}")
-
-    # Step-response for all 3 methods best PID parameters
-
-    # Create deep copies of the system for each PID tuning method
-    system_pid = copy.deepcopy(system)
-    system_pid.update_transfer_function(*best_pid_params)
-
-    system_pid_pso = copy.deepcopy(system)
-    system_pid_pso.update_transfer_function(*best_pid_params_pso)
-
-    system_pid_zn = copy.deepcopy(system)
-    system_pid_zn.update_transfer_function(*pid_params_zn)
+    # Ziegler-Nichols Tuning
+    kpu = 224  # Ultimate gain, obtained via Root Locus Calculation (Steady state oscilations)
+    kp_zn, ki_zn, kd_zn = ziegler_nichols_tuning(system, kpu)
+    pid_zn = PIDController(kp_zn, ki_zn, kd_zn)
 
     # Get the step responses
-    t, y_pid = system_pid.step_response()
-    t, y_pid_pso = system_pid_pso.step_response()
-    t, y_pid_zn = system_pid_zn.step_response()
+    t_ga, y_ga = plot_PID(system, pid_ga)
+    t_zn, y_zn = plot_PID(system, pid_zn)
 
-    # Plot the step response for all 3 methods best PID parameters
-    y_min = min(min(y_pid), min(y_pid_pso), min(y_pid_zn))
-    y_max = max(max(y_pid), max(y_pid_pso), max(y_pid_zn))
-
+    # Plot results
     plt.figure()
-    plt.plot(t, y_pid, label='Genetic Algorithm')
-    plt.plot(t, y_pid_pso, label='PSO Algorithm')
-    plt.plot(t, y_pid_zn, label='Ziegler-Nichols')
+
+    plt.plot(t_ga, y_ga, label='Genetic Algorithm Tuning')
+    plt.plot(t_zn, y_zn, label='Ziegler-Nichols Tuning')
+    
+    plt.title('Comparison of PID Tuning Methods')
     plt.xlabel('Time')
     plt.ylabel('Response')
-    plt.title('Best Step Response of the System')
     plt.legend()
-    plt.ylim(y_min - 0.1 * abs(y_min), y_max + 0.1 * abs(y_max))  # Add some padding to the y-axis
+    plt.grid(True)
     plt.show()
 
-    # Animate the Genetic Algorithm process
-    animate_genetic_algorithm(best_individuals, num_generations, system)
-    animate_genetic_algorithm(best_individuals_pso, num_generations, system)
-
-
 if __name__ == "__main__":
-    main()
+    compare_tuning()

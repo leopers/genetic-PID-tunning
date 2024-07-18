@@ -1,159 +1,250 @@
-import random
-import numpy as np
-from scipy.signal import lsim, TransferFunction
-from pid_controller import PIDController
+from typing import Any
+from utils import generate_gen
+from calc_fitness import evaluate_fitness, evaluate_mutation_fitness
+from system_simulation import SystemDynamics
 
+import control
+from control import TransferFunction
+from tqdm import tqdm
+from random import random
+import numpy as np 
+import copy
+import matplotlib.pyplot as plt
 
-def initialize_population(pop_size, Kp_range, Ki_range, Kd_range):
+class GeneticAlgorithm:
     """
-    Initialize the population with random values of Kp, Ki, and Kd
-    :param pop_size:
-    :param Kp_range:
-    :param Ki_range:
-    :param Kd_range:
-    :return:
+    Class implementing a Genetic Algorithm for PID controller optimization.
+    
+    Attributes:
+    system (SystemDynamics): The system dynamics.
+    n_var (int): Number of variables (genes).
+    n_bit (int): Number of bits per variable.
+    ra (float): The lower bound of the range.
+    rb (float): The upper bound of the range.
+    population_size (int): Size of the population.
+    target (float): Minimum fitness target for termination.
     """
-    population = []
-    for _ in range(pop_size):
-        Kp = random.uniform(*Kp_range)
-        Ki = random.uniform(*Ki_range)
-        Kd = random.uniform(*Kd_range)
-        population.append((Kp, Ki, Kd))
-    return population
+    def __init__(self, system, n_var, n_bit, ra, rb, population_size, minimum_target = 75) -> None:
+        """
+        Initialize the GeneticAlgorithm with the given parameters.
+        
+        Parameters:
+        system (SystemDynamics): The system to be controlled.
+        n_var (int): Number of variables (genes).
+        n_bit (int): Number of bits per variable.
+        ra (float): The lower bound of the range.
+        rb (float): The upper bound of the range.
+        population_size (int): Size of the population.
+        minimum_target (float): Minimum fitness target for termination. Default is 75.
+        """
+        self.num = system.system.num
+        self.den = system.system.den
+        self.n_var = n_var
+        self.n_bit = n_bit
+        self.ra = ra 
+        self.rb = rb
+        self.population_size = population_size
+        self.target = minimum_target
 
+    def create_population(self):
+        """
+        Create the initial population.
 
-def fitness_function(system, pid, setpoint, time, dt, cost_function):
-    """
-    Fitness function to evaluate the performance of the PID controller
-    :param system:
-    :param pid:
-    :param setpoint:
-    :param time:
-    :param dt:
-    :param cost_function:
-    :return:
-    """
-    measurements = simulate_system(system, pid, time)
-    return -cost_function(setpoint, measurements)  # Minimize the cost function
+        Returns:
+        list: A list of dictionaries, each representing an individual in the population with its genes, fitness, and chromosome.
+        """
+        print("Create the population")
+        population = []
+        for _ in tqdm(range(self.population_size)):
+            gen, chromosome = generate_gen(self.n_var, self.n_bit, self.ra, self.rb)
+            fitness = evaluate_fitness(self.num, self.den, gen)
+            population.append(
+                {
+                    "gen": gen,
+                    "fitness": fitness,
+                    "chromosome": chromosome
+                }
+            )
+        return population
+    
+    def selection(self, population):
+        """
+        Select two parents based on their fitness.
 
+        Parameters:
+        population (list): The current population.
 
-def simulate_system(system, pid, time):
-    """
-    Simulate the system with the PID controller
-    :param system:
-    :param pid:
-    :param time:
-    :return:
-    """
-    pid_tf = pid.create_transfer_function()
-    num = np.polymul(pid_tf.num, system.system.num)
-    den = np.polymul(pid_tf.den, system.system.den)
-    open_loop_tf = TransferFunction(num, den)  # Open-loop transfer function G(s)C(s)
-    closed_loop_num = np.polymul(open_loop_tf.num, [1])
-    closed_loop_den = np.polyadd(open_loop_tf.den, open_loop_tf.num)  # 1 + G(s)C(s)
-    closed_loop_tf = TransferFunction(closed_loop_num, closed_loop_den)
-    t_out, y, _ = lsim(closed_loop_tf, U=np.ones_like(time), T=time)
-    return y
+        Returns:
+        tuple: A tuple containing the two selected parents.
+        """
+        population_cp = copy.deepcopy(population)
+        fitness = []
+        for pop in population_cp:
+            fitness.append(pop["fitness"])
+        index = np.argmax(fitness)
+        parent1 = population_cp[index]
 
+        population_cp[index] = {}
+        fitness[index] = 0
 
-def select_parents(population, fitnesses, num_parents):
-    """
-    Select the best individuals as parents based on their fitness
-    :param population:
-    :param fitnesses:
-    :param num_parents:
-    :return:
-    """
-    sorted_population = sorted(zip(population, fitnesses), key=lambda x: x[1], reverse=True)
-    parents = [ind for ind, fit in sorted_population[:num_parents]]
-    return parents
+        index = np.argmax(fitness)
+        parent2 = population_cp[index]
 
+        return parent1, parent2
 
-def crossover(parents, offspring_size):
-    """
-    Crossover the parents to create offspring
-    :param parents:
-    :param offspring_size:
-    :return:
-    """
-    offspring = []
-    for _ in range(offspring_size):
-        parent1 = random.choice(parents)
-        parent2 = random.choice(parents)
-        child = (
-            (parent1[0] + parent2[0]) / 2,
-            (parent1[1] + parent2[1]) / 2,
-            (parent1[2] + parent2[2]) / 2
-        )
-        offspring.append(child)
-    return offspring
+    def crossover(self, parent1, parent2):
+        """
+        Perform crossover between two parents to produce two children.
 
+        Parameters:
+        parent1 (dict): The first parent.
+        parent2 (dict): The second parent.
 
-def mutate(offspring, Kp_range, Ki_range, Kd_range, mutation_rate=100):
-    """
-    Mutate the offspring with a certain probability
-    :param offspring:
-    :param Kp_range:
-    :param Ki_range:
-    :param Kd_range:
-    :param mutation_rate:
-    :return:
-    """
-    for i in range(len(offspring)):
-        if random.random() < mutation_rate:
-            Kp = random.uniform(*Kp_range)
-            Ki = random.uniform(*Ki_range)
-            Kd = random.uniform(*Kd_range)
-            offspring[i] = (Kp, Ki, Kd)
-    return offspring
+        Returns:
+        tuple: A tuple containing the two children.
+        """
+        child1 = copy.deepcopy(parent1)
+        child2 = copy.deepcopy(parent2)
 
+        slice_index = len(parent1["chromosome"]) // 2
 
-def create_next_generation(population, offspring):
-    """
-    Create the next generation by replacing the worst individuals with the offspring
-    :param population:
-    :param offspring:
-    :return:
-    """
-    return population[:len(population) - len(offspring)] + offspring
+        child1["chromosome"][:slice_index] = parent2["chromosome"][:slice_index]
+        child2["chromosome"][:slice_index] = parent1["chromosome"][:slice_index]
 
+        return child1, child2
+    
+    def mutation(self, child, mutation_rate):
+        """
+        Perform mutation on a child.
 
-def genetic_algorithm(system, time, setpoint, pop_size, num_generations, Kp_range, Ki_range, Kd_range, cost_function,
-                      dt=0.01):
-    """
-    Genetic algorithm to tune the PID controller
-    :param time:
-    :param system:
-    :param setpoint:
-    :param pop_size:
-    :param num_generations:
-    :param Kp_range:
-    :param Ki_range:
-    :param Kd_range:
-    :param cost_function:
-    :param dt:
-    :return:
-    """
-    time = time
-    population = initialize_population(pop_size, Kp_range, Ki_range, Kd_range)
-    best_individuals = []
+        Parameters:
+        child (dict): The child to be mutated.
+        mutation_rate (float): The mutation rate.
 
-    for generation in range(num_generations):
-        fitnesses = []
-        for individual in population:
-            Kp, Ki, Kd = individual
-            pid = PIDController(Kp, Ki, Kd)
-            fitness = fitness_function(system, pid, setpoint, time, dt, cost_function)
-            fitnesses.append(fitness)
+        Returns:
+        dict: The mutated child.
+        """
+        mutant = child
+        mutator = {
+            0: 1, 
+            1: 0
+        }
+        chromosome = child["chromosome"]
+        for i in range(len(chromosome)):
+            if random() < mutation_rate:
+                chromosome[i] = mutator[chromosome[i]]
 
-        parents = select_parents(population, fitnesses, num_parents=pop_size // 2)
-        offspring = crossover(parents, offspring_size=pop_size // 2)
-        offspring = mutate(offspring, Kp_range, Ki_range, Kd_range)
-        population = create_next_generation(population, offspring)
+        mutant["chromosome"] = chromosome
 
-        best_fitness = max(fitnesses)
-        best_individual = population[np.argmax(fitnesses)]
-        best_individuals.append(best_individual)
-        print(f"Generation {generation}: Best Fitness = {best_fitness}")
+        return mutant
+    
+    def regeneration(self, children, population):
+        """
+        Replace the least fit individuals in the population with the children.
 
-    return best_individual, best_individuals
+        Parameters:
+        children (list): The children to be added to the population.
+        population (list): The current population.
+
+        Returns:
+        list: The new population.
+        """
+        fitness = []
+        for pop in population:
+            fitness.append(pop["fitness"])
+
+        for i in range(len(children)):
+            index = np.argmin(fitness)
+            population[index] = children[i]
+            fitness[index] = np.inf
+
+        return population
+    
+    def termination(self, population):
+        """
+        Check if the termination condition is met.
+
+        Parameters:
+        population (list): The current population.
+
+        Returns:
+        tuple: A tuple containing the best individual and a boolean indicating whether to continue or terminate.
+        """
+        best, _ = self.selection(population)
+
+        if best["fitness"] > self.target:
+            loop = False
+        else: 
+            loop = True
+
+        return best, loop
+    
+    def display_out(self, pop, generation):
+        """
+        Display the optimization results for the current generation.
+
+        Parameters:
+        pop (dict): The best individual in the current generation.
+        generation (int): The current generation number.
+        """
+        print("##### Optimizing PID using Genetic Algorithm #####")
+        print(f"* Generation: {generation}")
+        print(f"* KP        : {pop['gen'][0]}")
+        print(f"* KI        : {pop['gen'][1]}")
+        print(f"* KD        : {pop['gen'][2]}")
+        print(f"* Fitness   : {pop['fitness']}")
+
+    def get_PID(self, num, den, pop):
+        """
+        Get the PID parameters from the best individual and display the step response.
+
+        Parameters:
+        num (list): Numerator coefficients of the transfer function.
+        den (list): Denominator coefficients of the transfer function.
+        pop (dict): The best individual containing the PID parameters.
+        """
+        tf_sys = TransferFunction(num, den)
+        best_gen_pid = pop["gen"]
+        kp, ki, kd = best_gen_pid[0], best_gen_pid[1], best_gen_pid[2]
+
+        return kp, ki, kd
+        
+    def __call__(self, mutation_rate=0.5, *args: Any, **kwds: Any) -> Any:
+        """
+        Run the Genetic Algorithm to optimize PID parameters.
+
+        Parameters:
+        mutation_rate (float): The mutation rate. Default is 0.5.
+
+        Returns:
+        Any: The result of the optimization.
+        """
+        population = self.create_population()
+
+        looping = True
+        generation = 0
+
+        while looping:
+
+            parent1, parent2 = self.selection(population)
+
+            child1, child2 = self.crossover(parent1, parent2)
+
+            mutation1 = self.mutation(child1, mutation_rate)
+            mutation2 = self.mutation(child2, mutation_rate)
+
+            fitness_mutation1, gen1 = evaluate_mutation_fitness(mutation1, self.num, self.den, self.n_var, self.n_bit, self.ra, self.rb)
+            fitness_mutation2, gen2 = evaluate_mutation_fitness(mutation2, self.num, self.den, self.n_var, self.n_bit, self.ra, self.rb)
+
+            mutation1["gen"] = gen1
+            mutation2["gen"] = gen2 
+            mutation1["fitness"] = fitness_mutation1
+            mutation2["fitness"] = fitness_mutation2
+
+            population = self.regeneration([mutation1, mutation2], population)
+            best, looping = self.termination(population)
+            self.display_out(best, generation)
+
+            generation += 1
+
+        return self.get_PID(self.num, self.den, best)
